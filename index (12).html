@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>admin - Cardápio Digital</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338ca;
+            --secondary: #10B981;
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 0.75rem;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding-bottom: 80px;
+            /* Space for mobile floating cart */
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom-left-radius: 1.5rem;
+            border-bottom-right-radius: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Category Filter */
+        .category-filter {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .category-filter::-webkit-scrollbar {
+            display: none;
+            /* Chrome/Safari */
+        }
+
+        .cat-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .cat-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Product Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #e5e7eb;
+        }
+
+        .card-body {
+            padding: 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            flex: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .add-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Floating Cart Button (Mobile/Desktop) */
+        .floating-cart {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--secondary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 2rem;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 100;
+            transition: transform 0.2s;
+            font-weight: 600;
+        }
+
+        .floating-cart:hover {
+            transform: scale(1.05);
+        }
+
+        .floating-cart.hidden {
+            display: none;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9fafb;
+        }
+
+        .modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .item-info .price-unit {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f3f4f6;
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+        }
+
+        .qty-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+        }
+
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            background: #f9fafb;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        /* Delivery Info in Modal */
+        .delivery-info {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.3rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <h1 id="store-name">admin</h1>
+            <div id="store-status" class="status-badge">Carregando...</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Categories -->
+        <div class="category-filter" id="category-list">
+            <button class="cat-btn active" onclick="filterProducts('all')">Todos</button>
+            <!-- Generated Items -->
+        </div>
+
+        <!-- Products -->
+        <div class="grid" id="product-grid">
+            <!-- Generated Cards -->
+        </div>
+    </div>
+
+    <!-- Floating Cart -->
+    <div class="floating-cart hidden" id="floating-cart" onclick="openCart()">
+        <i class="fas fa-shopping-cart"></i>
+        <span><span id="cart-count">0</span> itens - <span id="cart-total-float">R$ 0,00</span></span>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal-overlay" id="cart-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-shopping-bag"></i> Seu Pedido</h3>
+                <button class="close-modal" onclick="closeCart()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="cart-items">
+                    <!-- Cart Items -->
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Forma de Entrega</label>
+                    <select id="checkout-method" class="form-select" onchange="updateTotal()">
+                        <option value="delivery">Entrega</option>
+                        <option value="pickup">Retirada</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="delivery-zone-group">
+                    <label>CEP de Entrega</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="delivery-cep" class="form-input" placeholder="00000-000" maxlength="9"
+                            onkeyup="formatCEP(this)">
+                        <button class="add-btn" style="padding: 0.5rem;" onclick="checkCEP()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="cep-feedback" style="font-size: 0.85rem; margin-top: 0.25rem;"></div>
+                    <input type="hidden" id="delivery-fee-value" value="0">
+                    <input type="hidden" id="delivery-neighborhood" value="">
+                </div>
+
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="customer-name" class="form-input" placeholder="Seu nome">
+                </div>
+
+                <div class="form-group" id="address-group">
+                    <label>Endereço Completo</label>
+                    <input type="text" id="customer-address" class="form-input" placeholder="Rua, número, complemento">
+                </div>
+
+                <div class="form-group">
+                    <label>Observações</label>
+                    <input type="text" id="order-obs" class="form-input" placeholder="Ex: Sem cebola, troco para 50">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="total-row">
+                    <span>Total</span>
+                    <span id="final-total">R$ 0,00</span>
+                </div>
+                <button class="checkout-btn" onclick="sendOrder()">
+                    <i class="fab fa-whatsapp"></i> Enviar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA INJECTION START ---
+        const PRODUCTS = [{"categoria": "", "category_id": "", "descricao": "Processador com v\u00e1rios n\u00facleos.", "id": 1, "imagem": "http://gestor.lojadobrasil.com.br//static/uploads/bf72068e74484864add1436e068d9aea_1770906802.jpg", "preco": 10.54, "titulo": "Processador XEON"}, {"categoria": "", "category_id": "", "descricao": "processador", "id": 2, "imagem": "http://gestor.lojadobrasil.com.br//static/uploads/bf72068e74484864add1436e068d9aea_1770906802.jpg", "preco": 8.0, "titulo": "xeon"}, {"categoria": "", "category_id": null, "descricao": "sdsafasdf", "id": 4, "imagem": "https://th.bing.com/th/id/R.f61eefaac493ce85361484e2b516c33c?rik=1cFP%2b9pF5GDOUQ\u0026riu=http%3a%2f%2f1.bp.blogspot.com%2f-zSNBp8ja0ts%2fVT5RKeY4mMI%2fAAAAAAABDAg%2fxWh05EG8XEU%2fs1600%2fgreat-nature-landscape-2560x1600-wallpaper-4850.jpg\u0026ehk=XXT6slOWAKGBDb094%2bJQA0e5U9BsOZCxpTqzLkxS1QM%3d\u0026risl=\u0026pid=ImgRaw\u0026r=0", "preco": 10.54, "titulo": "teste"}];
+        const CATEGORIES = [];
+        const ZONES = [{"bairro": "centro", "cep_fim": "78076-320", "cep_inicio": "78076-301", "valor_entrega": 0.15}, {"bairro": "teste", "cep_fim": "78076-009", "cep_inicio": "78076-001", "valor_entrega": 0.12}];
+        const HOURS = [{"aberto": "08:00", "aberto_2": "", "day": "Segunda-feira", "fechado": "12:00", "fechado_2": "", "fechado_dia": true}, {"aberto": "08:00", "aberto_2": "", "day": "Ter\u00e7a-feira", "fechado": "12:00", "fechado_2": "", "fechado_dia": true}, {"aberto": "08:00", "aberto_2": "", "day": "Quarta-feira", "fechado": "12:00", "fechado_2": "", "fechado_dia": false}, {"aberto": "08:00", "aberto_2": "", "day": "Quinta-feira", "fechado": "12:00", "fechado_2": "", "fechado_dia": false}, {"aberto": "08:00", "aberto_2": "", "day": "Sexta-feira", "fechado": "12:00", "fechado_2": "", "fechado_dia": false}, {"aberto": "08:00", "aberto_2": "", "day": "S\u00e1bado", "fechado": "12:00", "fechado_2": "", "fechado_dia": false}, {"aberto": "08:00", "aberto_2": "", "day": "Domingo", "fechado": "12:00", "fechado_2": "", "fechado_dia": false}];
+        const WHATSAPP = "5565992242567";
+        const LOJA_NOME = "admin";
+        // --- DATA INJECTION END ---
+
+        // State
+        let cart = {}; // {productId: qty}
+        let currentFilter = 'all';
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHeaders();
+            renderCategories();
+            renderProducts();
+            renderZones();
+            checkOpenStatus();
+        });
+
+        // Utils
+        const formatMoney = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        function checkOpenStatus() {
+            const now = new Date();
+            const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+            const dayName = days[now.getDay()];
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const currentTime = hour * 60 + minute;
+
+            const todaySchedule = HOURS.find(h => h.day === dayName);
+
+            let isOpen = false;
+            let statusText = "Fechado";
+            let statusColor = "#ef4444"; // red
+
+            if (todaySchedule && !todaySchedule.fechado_dia) {
+                // Parse Times
+                const checkTime = (start, end) => {
+                    if (!start || !end) return false;
+                    const [sh, sm] = start.split(':').map(Number);
+                    const [eh, em] = end.split(':').map(Number);
+                    const startMin = sh * 60 + sm;
+                    const endMin = eh * 60 + em;
+                    return currentTime >= startMin && currentTime <= endMin;
+                };
+
+                if (checkTime(todaySchedule.aberto, todaySchedule.fechado)) isOpen = true;
+                if (checkTime(todaySchedule.aberto_2, todaySchedule.fechado_2)) isOpen = true;
+            }
+
+            const badge = document.getElementById('store-status');
+            if (isOpen) {
+                badge.textContent = "Aberto Agora";
+                badge.style.backgroundColor = "rgba(16, 185, 129, 0.2)";
+                badge.style.color = "#10b981"; // green
+                badge.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+            } else {
+                badge.textContent = "Fechado Agora";
+                badge.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
+                badge.style.color = "#ef4444";
+                badge.style.border = "1px solid rgba(239, 68, 68, 0.4)";
+            }
+        }
+
+        function renderHeaders() {
+            document.title = `${LOJA_NOME} - Cardápio`;
+            document.getElementById('store-name').innerText = LOJA_NOME;
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('category-list');
+            CATEGORIES.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'cat-btn';
+                btn.textContent = cat.name;
+                btn.onclick = () => filterProducts(cat.id, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function filterProducts(catId, btnElement) {
+            currentFilter = catId;
+            renderProducts();
+
+            // Update active state
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            if (btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                document.querySelector('.cat-btn').classList.add('active'); // "Todos"
+            }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+
+            const filtered = currentFilter === 'all'
+                ? PRODUCTS
+                : PRODUCTS.filter(p => p.category_id == currentFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Nenhum produto nesta categoria.</p>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                // Image handling: if it's a local static path, we might have issues in a purely static file unless images are also downloaded.
+                // However, user just asked for index.html. Assuming images might be external URLs or user accepts broken images if local.
+                // Ideally we'd convert images to Base64 but that makes the HTML huge.
+                // For now, let's keep the URL. If it's absolute, good. If relative, it might break if not on same domain.
+                // BUT: The prompt says "generate the site ready". If it's single file, images will likely be broken if they are relative paths like /static/uploads/... and the user opens index.html locally.
+                // Fix strategy: We will use the FULL URL domain in the backend injection if possible.
+
+                card.innerHTML = `
+                    <img src="${p.imagem}" class="card-img" alt="${p.titulo}" onerror="this.src='https://via.placeholder.com/300?text=Sem+Imagem'">
+                    <div class="card-body">
+                        <h3 class="card-title">${p.titulo}</h3>
+                        <p class="card-desc">${p.descricao}</p>
+                        <div class="card-footer">
+                            <span class="price">${formatMoney(p.preco)}</span>
+                            <button class="add-btn" onclick="addToCart(${p.id})">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderZones() {
+            // No longer render a select list. Zones are used for CEP checking.
+            console.log("Zones loaded:", ZONES.length);
+        }
+
+        // --- CEP Logic ---
+        function formatCEP(input) {
+            let value = input.value.replace(/\D/g, "");
+            if (value.length > 5) {
+                value = value.substring(0, 5) + "-" + value.substring(5, 8);
+            }
+            input.value = value;
+        }
+
+        function checkCEP() {
+            const cepInput = document.getElementById('delivery-cep').value.replace(/\D/g, '');
+            const feedback = document.getElementById('cep-feedback');
+            const feeInput = document.getElementById('delivery-fee-value');
+            const neighborhoodInput = document.getElementById('delivery-neighborhood');
+
+            if (cepInput.length !== 8) {
+                feedback.innerHTML = '<span style="color: #ef4444;">CEP inválido. Digite 8 números.</span>';
+                feeInput.value = 0;
+                neighborhoodInput.value = "";
+                updateTotal();
+                return;
+            }
+
+            const cepNum = parseInt(cepInput);
+            let foundZone = null;
+
+            for (const zone of ZONES) {
+                const start = parseInt(zone.cep_inicio.replace(/\D/g, ''));
+                const end = parseInt(zone.cep_fim.replace(/\D/g, ''));
+
+                if (cepNum >= start && cepNum <= end) {
+                    foundZone = zone;
+                    break;
+                }
+            }
+
+            if (foundZone) {
+                feedback.innerHTML = `<span style="color: #10b981;">Entrega para ${foundZone.bairro}: ${formatMoney(foundZone.valor_entrega)}</span>`;
+                feeInput.value = foundZone.valor_entrega;
+                neighborhoodInput.value = foundZone.bairro;
+            } else {
+                feedback.innerHTML = '<span style="color: #ef4444;">Desculpe, não entregamos neste CEP.</span>';
+                feeInput.value = 0;
+                neighborhoodInput.value = "";
+            }
+            updateTotal();
+        }
+
+        // --- Cart Logic ---
+
+        function addToCart(id) {
+            if (!cart[id]) cart[id] = 0;
+            cart[id]++;
+            updateCartUI();
+            openCart(); // Optional: open cart immediately or just show badge
+        }
+
+        function removeFromCart(id) {
+            if (cart[id]) {
+                cart[id]--;
+                if (cart[id] <= 0) delete cart[id];
+                updateCartUI();
+            }
+        }
+
+        function updateCartUI() {
+            let count = 0;
+            let subtotal = 0;
+
+            const itemsContainer = document.getElementById('cart-items');
+            itemsContainer.innerHTML = '';
+
+            Object.keys(cart).forEach(id => {
+                const p = PRODUCTS.find(prod => prod.id == id);
+                if (p) {
+                    const qty = cart[id];
+                    count += qty;
+                    subtotal += p.preco * qty;
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'cart-item';
+                    itemEl.innerHTML = `
+                        <div class="item-info">
+                            <h4>${p.titulo}</h4>
+                            <span class="price-unit">${formatMoney(p.preco)} x ${qty}</span>
+                        </div>
+                        <div class="item-controls">
+                            <button class="qty-btn" onclick="removeFromCart(${id})">-</button>
+                            <span>${qty}</span>
+                            <button class="qty-btn" onclick="addToCart(${id})">+</button>
+                        </div>
+                    `;
+                    itemsContainer.appendChild(itemEl);
+                }
+            });
+
+            // Update Badge
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-total-float').innerText = formatMoney(subtotal);
+
+            const floatBtn = document.getElementById('floating-cart');
+            if (count > 0) floatBtn.classList.remove('hidden');
+            else floatBtn.classList.add('hidden');
+
+            if (count === 0) {
+                itemsContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">Seu carrinho está vazio.</p>';
+                closeCart(); // Auto close if empty? No, maybe user wants to see it empty. But here we'll leave it.
+            }
+
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let subtotal = 0;
+            Object.keys(cart).forEach(id => {
+                const p = PRODUCTS.find(prod => prod.id == id);
+                if (p) subtotal += p.preco * cart[id];
+            });
+
+            const method = document.getElementById('checkout-method').value;
+            let fee = 0;
+
+            const zoneFeeInput = document.getElementById('delivery-fee-value');
+            const addressGroup = document.getElementById('address-group');
+            const zoneGroup = document.getElementById('delivery-zone-group');
+
+            if (method === 'delivery') {
+                fee = parseFloat(zoneFeeInput.value) || 0;
+                addressGroup.style.display = 'block';
+                zoneGroup.style.display = 'block';
+            } else {
+                addressGroup.style.display = 'none';
+                zoneGroup.style.display = 'none';
+            }
+
+            const total = subtotal + fee;
+            document.getElementById('final-total').innerText = formatMoney(total);
+        }
+
+        function openCart() {
+            document.getElementById('cart-modal').classList.add('active');
+        }
+
+        function closeCart() {
+            document.getElementById('cart-modal').classList.remove('active');
+        }
+
+        // Close on click outside
+        document.getElementById('cart-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('cart-modal')) closeCart();
+        });
+
+        function sendOrder() {
+            if (Object.keys(cart).length === 0) {
+                alert("Seu carrinho está vazio!");
+                return;
+            }
+
+            const name = document.getElementById('customer-name').value;
+            if (!name) {
+                alert("Por favor, digite seu nome.");
+                return;
+            }
+
+            const method = document.getElementById('checkout-method').value;
+            const address = document.getElementById('customer-address').value;
+            const obs = document.getElementById('order-obs').value;
+            const cepValue = document.getElementById('delivery-cep').value;
+            const feeValue = parseFloat(document.getElementById('delivery-fee-value').value);
+            const neighborhood = document.getElementById('delivery-neighborhood').value;
+
+            if (method === 'delivery' && !address) {
+                alert("Por favor, digite seu endereço.");
+                return;
+            }
+            if (method === 'delivery') {
+                if (!cepValue || feeValue === 0) {
+                    alert("Por favor, digite um CEP válido para entrega.");
+                    return;
+                }
+            }
+
+            // Build Message
+            let msg = `*Novo Pedido - ${LOJA_NOME}*\n\n`;
+            msg += `*Cliente:* ${name}\n`;
+            msg += `*Tipo:* ${method === 'delivery' ? 'Entrega 🛵' : 'Retirada 🥡'}\n`;
+            if (method === 'delivery') {
+                msg += `*Endereço:* ${address}\n`;
+                msg += `*CEP:* ${cepValue}\n`;
+                msg += `*Bairro:* ${neighborhood}\n`;
+            }
+            if (obs) msg += `*Obs:* ${obs}\n`;
+
+            msg += `\n*Itens:*\n`;
+
+            let subtotal = 0;
+            Object.keys(cart).forEach(id => {
+                const p = PRODUCTS.find(prod => prod.id == id);
+                if (p) {
+                    const qty = cart[id];
+                    subtotal += p.preco * qty;
+                    msg += `${qty}x ${p.titulo} (${formatMoney(p.preco * qty)})\n`;
+                }
+            });
+
+            let fee = (method === 'delivery') ? feeValue : 0;
+
+            msg += `\n*Subtotal:* ${formatMoney(subtotal)}`;
+            if (fee > 0) msg += `\n*Taxa de Entrega:* ${formatMoney(fee)}`;
+            msg += `\n*TOTAL:* ${formatMoney(subtotal + fee)}`;
+
+            const link = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+            window.open(link, '_blank');
+        }
+
+    </script>
+</body>
+
+</html>
